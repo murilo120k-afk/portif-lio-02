@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KonLivro — Livraria</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/estilo.css">
+</head>
+<body>
+  <div class="jornal">
+    <header>
+      <div class="edicao">
+        <span>Livraria · Painel administrativo</span>
+        <span>Seu catálogo, bem cuidado</span>
+      </div>
+
+      <h1>KonLivro</h1>
+      <p class="subtitulo">Um lugar para organizar livros e preservar histórias.</p>
+
+      <nav aria-label="Navegação principal">
+        <a href="index.html" aria-current="page">Início</a>
+        <a href="#acervo">Consultar acervo</a>
+        <a href="cadastrar.html">Cadastrar livro</a>
+        <a href="lista.html">Lista de livros</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="abertura" aria-labelledby="titulo-principal">
+        <div>
+          <p class="rotulo">Editorial · Visão geral</p>
+          <h2 id="titulo-principal">Boas histórias começam com um acervo organizado.</h2>
+          <p class="introducao">
+            Cadastre novos títulos, consulte seus livros e mantenha
+            as informações da livraria sempre em dia.
+          </p>
+          <a class="botao" href="cadastrar.html">Cadastrar novo livro →</a>
+        </div>
+
+        <aside class="indicadores" aria-label="Resumo do acervo de demonstração">
+          <div class="indicador">
+            <span>Títulos cadastrados</span>
+            <strong id="totalLivros"></strong>
+          </div>
+          <div class="indicador">
+            <span>Exemplares em estoque</span>
+            <strong id="totalEstoque"></strong>
+          </div>
+        </aside>
+      </section>
+
+      <section class="acervo" id="acervo" aria-labelledby="titulo-acervo">
+        <p class="rotulo">Catálogo · Edição demonstrativa</p>
+        <h2 id="titulo-acervo">Livros do acervo</h2>
+
+        <div class="pesquisa">
+          <label for="pesquisa">Pesquisar título</label>
+          <input
+            id="pesquisa"
+            type="search"
+            placeholder="Digite o nome de um livro..."
+          >
+        </div>
+
+        <div class="tabela">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Título</th>
+                <th scope="col">Autor</th>
+                <th scope="col">Estoque</th>
+                <th scope="col">Preço</th>
+              </tr>
+            </thead>
+            <tbody id="listaLivros"></tbody>
+          </table>
+        </div>
+
+        <p class="resultado" id="resultado" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <footer>
+      <p class="observacao">
+        Dados ilustrativos. Para utilizar o acervo real, conecte esta página
+        ao PHP e ao banco de dados. O botão de cadastro aponta para
+        a página cadastrar.html, que deve ser criada separadamente.
+      </p>
+      <span>KonLivro</span>
+    </footer>
+  </div>
+
+  <script src="../JS/script.js"></script>
+</body>
+</html>

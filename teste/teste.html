@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conectando HTML e PHP — Gazeta do Acervo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --papel:#f1ebdf; --tinta:#302c26; --linha:#b9af9e; --cinza:#686055; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--papel); color:var(--tinta); font-family:"Source Serif 4",serif; line-height:1.7; }
+    main,header,footer { width:min(100% - 36px,960px); margin:auto; }
+    header { padding:30px 0 22px; border-bottom:3px double var(--tinta); }
+    .rotulo { font-size:11px; text-transform:uppercase; letter-spacing:2px; }
+    h1,h2 { font-family:"Libre Baskerville",serif; line-height:1.3; }
+    h1 { font-size:clamp(28px,5vw,46px); letter-spacing:-1px; margin:16px 0; }
+    header p { color:var(--cinza); margin-bottom:0; }
+    section { padding:28px 0; border-bottom:1px solid var(--linha); }
+    h2 { font-size:23px; margin:0 0 16px; }
+    p { margin:12px 0; }
+    pre { background:#e7dfd0; border-left:3px solid var(--tinta); padding:18px; overflow:auto; font-size:13px; line-height:1.7; }
+    code { font-family:monospace; }
+    .nota { padding:14px 18px; border:1px solid var(--linha); }
+    footer { padding:22px 0; color:var(--cinza); font-size:13px; }
+    main { animation:entrada .5s both; }
+    @keyframes entrada { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @media(prefers-reduced-motion:reduce) { main { animation:none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="rotulo">Gazeta do Acervo · Guia de integração</span>
+    <h1>Como conectar as páginas ao PHP</h1>
+    <p>O HTML exibe a interface. O JavaScript envia as requisições. O PHP consulta e atualiza o banco de dados.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>1. Organize os arquivos e execute o servidor</h2>
+      <pre><code>sistema-acervo/
+├── index.html
+├── cadastrar.html
+├── editar.html
+├── lista.html
+├── css/
+│   └── style.css
+├── php/
+│   ├── conexao.php
+│   ├── listar.php
+│   ├── obter.php
+│   ├── cadastrar.php
+│   └── editar.php
+└── database/
+    └── banco.sql</code></pre>
+      <p>Com o XAMPP, coloque a pasta em <code>htdocs</code> e inicie o Apache e o MySQL. Acesse:</p>
+      <pre><code>http://localhost/sistema-acervo/index.html</code></pre>
+      <p>Não abra as páginas por duplo clique nem use apenas o Live Server: o PHP precisa de um servidor compatível.</p>
+    </section>
+
+    <section>
+      <h2>2. Crie o banco de dados</h2>
+      <p>Execute este SQL no phpMyAdmin. Você também pode salvá-lo em <code>database/banco.sql</code>.</p>
+      <pre><code>CREATE DATABASE IF NOT EXISTS livraria
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE livraria;
+
+CREATE TABLE livros (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  titulo VARCHAR(150) NOT NULL,
+  autor VARCHAR(120) NOT NULL,
+  categoria VARCHAR(50) NOT NULL,
+  quantidade INT UNSIGNED NOT NULL DEFAULT 0,
+  preco DECIMAL(10,2) NOT NULL
+);</code></pre>
+    </section>
+
+    <section>
+      <h2>3. Conecte o PHP ao MySQL</h2>
+      <p>Crie <code>php/conexao.php</code>. Todos os outros arquivos PHP vão reutilizar essa conexão.</p>
+      <pre><code>&lt;?php
+// php/conexao.php
+header('Content-Type: application/json; charset=utf-8');
+
+function responder(array $dados, int $status = 200): never {
+    http_response_code($status);
+    echo json_encode($dados, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+try {
+    $pdo = new PDO(
+        'mysql:host=localhost;dbname=livraria;charset=utf8mb4',
+        'root',
+        '', // Senha padrão em algumas instalações locais do XAMPP.
+        [
+            PDO::ATTR_ERRMODE =&gt; PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE =&gt; PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES =&gt; false
+        ]
+    );
+} catch (PDOException $erro) {
+    error_log($erro-&gt;getMessage());
+    responder(['mensagem' =&gt; 'Erro ao conectar ao banco.'], 500);
+}
+
+set_exception_handler(function (Throwable $erro) {
+    error_log($erro-&gt;getMessage());
+    responder(['mensagem' =&gt; 'Erro interno do servidor.'], 500);
+});</code></pre>
+      <p class="nota">Os exemplos usam PHP 8.1 ou superior. Ajuste usuário e senha conforme seu ambiente. Em produção, use credenciais fora do código público e um usuário de banco com permissões limitadas.</p>
+    </section>
+
+    <section>
+      <h2>4. Liste os livros</h2>
+      <p>Crie <code>php/listar.php</code>. Sua página <code>lista.html</code> já chama esse endereço com Fetch API e espera um array JSON.</p>
+      <pre><code>&lt;?php
+require __DIR__ . '/conexao.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    responder(['mensagem' =&gt; 'Método não permitido.'], 405);
+}
+
+$consulta = $pdo-&gt;query(
+    'SELECT id, titulo, autor, categoria, quantidade, preco
+     FROM livros ORDER BY id DESC'
+);
+
+responder($consulta-&gt;fetchAll());</code></pre>
+      <p>A conexão na página acontece neste trecho, que já está no JavaScript de <code>lista.html</code>:</p>
+      <pre><code>const resposta = await fetch("php/listar.php");
+const livros = await resposta.json();</code></pre>
+    </section>
+
+    <section>
+      <h2>5. Carregue um livro para edição</h2>
+      <p>Crie <code>php/obter.php</code>. O endereço <code>editar.html?id=1</code> consulta o livro de ID 1.</p>
+      <pre><code>&lt;?php
+require __DIR__ . '/conexao.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    responder(['mensagem' =&gt; 'Método não permitido.'], 405);
+}
+
+$id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT,
+    ['options' =&gt; ['min_range' =&gt; 1]]);
+
+if ($id === false || $id === null) {
+    responder(['mensagem' =&gt; 'ID inválido.'], 422);
+}
+
+$consulta = $pdo-&gt;prepare('SELECT * FROM livros WHERE id = :id');
+$consulta-&gt;execute(['id' =&gt; $id]);
+$livro = $consulta-&gt;fetch();
+
+if (!$livro) {
+    responder(['mensagem' =&gt; 'Livro não encontrado.'], 404);
+}
+
+responder($livro);</code></pre>
+      <p>O JavaScript de <code>editar.html</code> já utiliza esse endpoint para preencher o formulário.</p>
+    </section>
+
+    <section>
+      <h2>6. Valide os dados recebidos</h2>
+      <p>Para não repetir a validação, crie mais um arquivo: <code>php/validar.php</code>. Ele será usado no cadastro e na edição.</p>
+      <pre><code>&lt;?php
+// Inclua este arquivo depois de conexao.php.
+function validarLivro(): array {
+    $titulo = $_POST['titulo'] ?? '';
+    $autor = $_POST['autor'] ?? '';
+    $categoria = $_POST['categoria'] ?? '';
+    $q = $_POST['quantidade'] ?? '';
+    $p = $_POST['preco'] ?? '';
+
+    foreach ([$titulo, $autor, $categoria, $q, $p] as $valor) {
+        if (!is_string($valor)) {
+            responder(['mensagem' =&gt; 'Formato de dados inválido.'], 422);
+        }
+    }
+
+    $titulo = trim($titulo);
+    $autor = trim($autor);
+
+    $categorias = [
+        'literatura-brasileira', 'ficcao', 'fantasia',
+        'educacao', 'desenvolvimento-pessoal', 'outras'
+    ];
+
+    $quantidade = filter_var($q, FILTER_VALIDATE_INT,
+        ['options' =&gt; ['min_range' =&gt; 0, 'max_range' =&gt; 999999]]);
+
+    // O input type="number" envia o decimal com ponto.
+    if ($titulo === '' || mb_strlen($titulo) &gt; 150 ||
+        $autor === '' || mb_strlen($autor) &gt; 120 ||
+        !in_array($categoria, $categorias, true) ||
+        $quantidade === false ||
+        !preg_match('/^\d{1,6}(\.\d{1,2})?$/', $p) ||
+        (float) $p &gt; 999999) {
+        responder(['mensagem' =&gt; 'Confira os campos informados.'], 422);
+    }
+
+    return [
+        'titulo' =&gt; $titulo,
+        'autor' =&gt; $autor,
+        'categoria' =&gt; $categoria,
+        'quantidade' =&gt; $quantidade,
+        'preco' =&gt; $p
+    ];
+}</code></pre>
+      <p>Essa validação precisa da extensão <code>mbstring</code>, disponível nas instalações usuais do XAMPP. Validar no navegador não substitui validar no servidor.</p>
+    </section>
+
+    <section>
+      <h2>7. Salve o cadastro</h2>
+      <p>Crie <code>php/cadastrar.php</code>:</p>
+      <pre><code>&lt;?php
+require __DIR__ . '/conexao.php';
+require __DIR__ . '/validar.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    responder(['mensagem' =&gt; 'Método não permitido.'], 405);
+}
+
+$dados = validarLivro();
+
+$consulta = $pdo-&gt;prepare(
+    'INSERT INTO livros (titulo, autor, categoria, quantidade, preco)
+     VALUES (:titulo, :autor, :categoria, :quantidade, :preco)'
+);
+$consulta-&gt;execute($dados);
+
+responder([
+    'sucesso' =&gt; true,
+    'id' =&gt; $pdo-&gt;lastInsertId()
+], 201);</code></pre>
+
+      <p>Seu formulário de cadastro já aponta para ele:</p>
+      <pre><code>&lt;form id="formCadastro"
+      action="php/cadastrar.php"
+      method="post"&gt;</code></pre>
+      <p>Com o envio tradicional, o navegador exibirá o JSON retornado pelo PHP. Para voltar à lista após salvar, substitua o script de <code>cadastrar.html</code> por este:</p>
+      <pre><code>const formulario = document.getElementById("formCadastro");
+const mensagem = document.getElementById("mensagem");
+const botao = formulario.querySelector('button[type="submit"]');
+
+formulario.addEventListener("submit", async evento =&gt; {
+  evento.preventDefault();
+  if (!formulario.reportValidity()) return;
+
+  botao.disabled = true;
+  mensagem.textContent = "Salvando…";
+
+  try {
+    const resposta = await fetch(formulario.action, {
+      method: "POST",
+      body: new FormData(formulario),
+      headers: { Accept: "application/json" }
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok || dados.sucesso !== true) {
+      throw new Error(dados.mensagem || "Não foi possível cadastrar.");
+    }
+
+    window.location.href = "lista.html";
+  } catch (erro) {
+    mensagem.textContent = erro.message;
+  } finally {
+    botao.disabled = false;
+  }
+});</code></pre>
+    </section>
+
+    <section>
+      <h2>8. Salve as alterações</h2>
+      <p>Crie <code>php/editar.php</code>. O script de <code>editar.html</code> já envia o formulário para esse arquivo.</p>
+      <pre><code>&lt;?php
+require __DIR__ . '/conexao.php';
+require __DIR__ . '/validar.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    responder(['mensagem' =&gt; 'Método não permitido.'], 405);
+}
+
+$id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT,
+    ['options' =&gt; ['min_range' =&gt; 1]]);
+
+if ($id === false || $id === null) {
+    responder(['mensagem' =&gt; 'ID inválido.'], 422);
+}
+
+$dados = validarLivro();
+
+$pdo-&gt;beginTransaction();
+
+$consulta = $pdo-&gt;prepare(
+    'SELECT id FROM livros WHERE id = :id FOR UPDATE'
+);
+$consulta-&gt;execute(['id' =&gt; $id]);
+
+if (!$consulta-&gt;fetch()) {
+    $pdo-&gt;rollBack();
+    responder(['mensagem' =&gt; 'Livro não encontrado.'], 404);
+}
+
+$dados['id'] = $id;
+
+$consulta = $pdo-&gt;prepare(
+    'UPDATE livros
+     SET titulo = :titulo, autor = :autor,
+         categoria = :categoria, quantidade = :quantidade,
+         preco = :preco
+     WHERE id = :id'
+);
+$consulta-&gt;execute($dados);
+$pdo-&gt;commit();
+
+responder(['sucesso' =&gt; true]);</code></pre>
+    </section>
+
+    <section>
+      <h2>9. Teste o fluxo completo</h2>
+      <ol>
+        <li>Abra <code>cadastrar.html</code> pelo localhost e cadastre um livro.</li>
+        <li>Confira o registro na tabela <code>livros</code> no phpMyAdmin.</li>
+        <li>Abra <code>lista.html</code> e pesquise pelo título.</li>
+        <li>Clique em “Editar”, altere um campo e salve.</li>
+        <li>Atualize a lista e confira a alteração.</li>
+      </ol>
+      <p>Atualize também os links “Acervo” das outras páginas para <code>lista.html</code>.</p>
+      <p class="nota"><strong>Importante:</strong> esta integração é uma base para desenvolvimento local, não um painel pronto para publicação. Antes de disponibilizá-la na internet, implemente autenticação, autorização e proteção CSRF. As consultas preparadas ajudam a prevenir SQL Injection, mas não substituem essas proteções.</p>
+    </section>
+  </main>
+
+  <footer>HTML → requisição HTTP → PHP/PDO → MySQL → resposta JSON → interface.</footer>
+  <script>
+    // Esta página é um guia. Os códigos apresentados devem ser
+    // salvos nos arquivos correspondentes do seu projeto.
+  </script>
+</body>
+</html>

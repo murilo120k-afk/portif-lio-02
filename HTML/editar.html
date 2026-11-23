@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar livro — KonLivro</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../CSS/estilo.css">
+</head>
+<body>
+  <!--
+    Salve como editar.html.
+
+    Abra com o ID do livro:
+    editar.html?id=1
+
+    Endpoints necessários:
+    GET php/obter.php?id=1
+    Retorno JSON esperado:
+    {"id":1,"titulo":"Dom Casmurro","autor":"Machado de Assis",
+     "categoria":"literatura-brasileira","quantidade":10,"preco":"34.90"}
+
+    POST php/editar.php
+    Recebe: id, titulo, autor, categoria, quantidade e preco.
+    Retorno JSON esperado após salvar: {"sucesso":true}
+
+    Em caso de erro, use status HTTP apropriado e:
+    {"mensagem":"Descrição do erro"}
+
+    O PHP deve validar os dados, verificar autorização e usar PDO.
+    Este HTML não grava dados sozinho.
+  -->
+
+  <div class="jornal">
+    <header>
+      <div class="edicao">
+        <span>Livraria · Painel administrativo</span>
+        <span>Seção de atualização</span>
+      </div>
+
+      <h1>Gazeta do Acervo</h1>
+      <p class="subtitulo">O cuidado com as histórias está nos detalhes.</p>
+
+      <nav aria-label="Navegação principal">
+        <a href="index.html">Início</a>
+        <a href="index.html#acervo">Acervo</a>
+        <a href="cadastrar.html">Cadastrar livro</a>
+        <a href="lista.html">Lista de livros</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="entrada">
+        <a class="voltar" href="index.html#acervo">← Voltar ao acervo</a>
+        <p class="rotulo">Acervo · Revisão de registro</p>
+        <h2>Editar livro</h2>
+        <p class="introducao">
+          Revise as informações do título e salve as alterações.
+        </p>
+      </div>
+
+      <p id="mensagem" class="mensagem" role="status" aria-live="polite">
+        Preparando o formulário…
+      </p>
+
+      <div class="conteudo entrada">
+        <form id="formEdicao">
+          <input id="id" name="id" type="hidden">
+
+          <fieldset id="campos" disabled>
+            <legend class="ajuda completo">Todos os campos com * são obrigatórios.</legend>
+
+            <div class="campo completo">
+              <label for="titulo">Título do livro *</label>
+              <input id="titulo" name="titulo" type="text" maxlength="150" required>
+            </div>
+
+            <div class="campo completo">
+              <label for="autor">Autor *</label>
+              <input id="autor" name="autor" type="text" maxlength="120" required>
+            </div>
+
+            <div class="campo completo">
+              <label for="categoria">Categoria *</label>
+              <select id="categoria" name="categoria" required>
+                <option value="">Selecione uma categoria</option>
+                <option value="literatura-brasileira">Literatura brasileira</option>
+                <option value="ficcao">Ficção</option>
+                <option value="fantasia">Fantasia</option>
+                <option value="educacao">Educação</option>
+                <option value="desenvolvimento-pessoal">Desenvolvimento pessoal</option>
+                <option value="outras">Outras</option>
+              </select>
+            </div>
+
+            <div class="campo">
+              <label for="quantidade">Quantidade *</label>
+              <input id="quantidade" name="quantidade" type="number"
+                min="0" max="999999" step="1" required
+                aria-describedby="ajudaQuantidade">
+              <p class="ajuda" id="ajudaQuantidade">Exemplares em estoque.</p>
+            </div>
+
+            <div class="campo">
+              <label for="preco">Preço unitário (R$) *</label>
+              <input id="preco" name="preco" type="number"
+                min="0" max="999999" step="0.01" required
+                aria-describedby="ajudaPreco">
+              <p class="ajuda" id="ajudaPreco">Valor de um exemplar.</p>
+            </div>
+
+            <div class="acoes completo">
+              <button id="salvar" type="submit">Salvar alterações →</button>
+              <a href="index.html#acervo">Cancelar</a>
+            </div>
+          </fieldset>
+        </form>
+
+        <aside aria-labelledby="orientacoes">
+          <p class="rotulo">Nota ao administrador</p>
+          <h3 id="orientacoes">Uma revisão cuidadosa</h3>
+          <p>Confira a grafia do título e do autor antes de atualizar o registro.</p>
+          <p>A quantidade representa os exemplares disponíveis. O preço corresponde a uma unidade.</p>
+          <p class="nota">As alterações só são confirmadas depois que o servidor salva os dados.</p>
+          <p class="nota">
+            <strong>Livro selecionado</strong><br>
+            <span id="registro">Nenhum registro carregado.</span>
+          </p>
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      <span>KonLivro · Gestão da livraria</span>
+      <span>Organização em cada página.</span>
+    </footer>
+  </div>
+
+  <script>
+    const formulario = document.getElementById("formEdicao");
+    const campos = document.getElementById("campos");
+    const mensagem = document.getElementById("mensagem");
+    const salvar = document.getElementById("salvar");
+    const id = new URLSearchParams(window.location.search).get("id");
+    let salvando = false;
+
+    function avisar(texto, erro = false) {
+      mensagem.textContent = texto;
+      mensagem.classList.toggle("erro", erro);
+    }
+
+    async function lerResposta(resposta) {
+      let dados;
+
+      try {
+        dados = await resposta.json();
+      } catch {
+        throw new Error("O servidor não retornou um JSON válido. Verifique os arquivos PHP.");
+      }
+
+      if (!resposta.ok) {
+        throw new Error(dados.mensagem || "Não foi possível concluir a operação.");
+      }
+
+      return dados;
+    }
+
+    async function carregarLivro() {
+      if (!id || !/^[1-9]\d*$/.test(id)) {
+        avisar("Selecione um livro no acervo. O endereço deve conter um ID válido, como editar.html?id=1.", true);
+        return;
+      }
+
+      if (window.location.protocol === "file:") {
+        avisar("Abra esta página por um servidor PHP para consultar e editar o livro.", true);
+        return;
+      }
+
+      avisar("Carregando os dados do livro…");
+
+      try {
+        const resposta = await fetch(
+          `php/obter.php?id=${encodeURIComponent(id)}`,
+          { headers: { Accept: "application/json" }, cache: "no-store" }
+        );
+        const livro = await lerResposta(resposta);
+
+        if (!livro || String(livro.id) !== id ||
+            typeof livro.titulo !== "string" || typeof livro.autor !== "string" ||
+            livro.quantidade == null || livro.preco == null) {
+          throw new Error("Os dados recebidos não correspondem ao registro solicitado.");
+        }
+
+        ["titulo", "autor", "categoria", "quantidade", "preco"].forEach(nome => {
+          document.getElementById(nome).value = livro[nome] ?? "";
+        });
+
+        document.getElementById("id").value = id;
+        document.getElementById("registro").textContent = `Nº ${id} — ${livro.titulo}`;
+        campos.disabled = false;
+        avisar("Registro carregado. Você pode atualizar as informações.");
+      } catch (erro) {
+        avisar(erro.message || "Não foi possível conectar ao servidor.", true);
+      }
+    }
+
+    ["titulo", "autor"].forEach(nome => {
+      document.getElementById(nome).addEventListener("input", evento => {
+        evento.target.setCustomValidity("");
+      });
+    });
+
+    formulario.addEventListener("submit", async evento => {
+      evento.preventDefault();
+      if (salvando || campos.disabled) return;
+
+      for (const nome of ["titulo", "autor"]) {
+        const campo = document.getElementById(nome);
+        campo.value = campo.value.trim();
+        campo.setCustomValidity(campo.value ? "" : "Preencha este campo com um texto válido.");
+      }
+
+      if (!formulario.reportValidity()) return;
+
+      // Capture os dados antes de desabilitar os campos.
+      const dados = new FormData(formulario);
+      salvando = true;
+      campos.disabled = true;
+      salvar.textContent = "Salvando…";
+      avisar("Enviando as alterações ao servidor…");
+
+      try {
+        const resposta = await fetch("php/editar.php", {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          body: dados
+        });
+        const retorno = await lerResposta(resposta);
+
+        if (retorno.sucesso !== true) {
+          throw new Error(retorno.mensagem || "O servidor não confirmou a atualização.");
+        }
+
+        document.getElementById("registro").textContent =
+          `Nº ${id} — ${document.getElementById("titulo").value}`;
+        avisar("Alterações salvas com sucesso.");
+      } catch (erro) {
+        avisar(erro.message || "Falha na conexão. Verifique o acervo antes de tentar novamente.", true);
+      } finally {
+        salvando = false;
+        campos.disabled = false;
+        salvar.textContent = "Salvar alterações →";
+      }
+    });
+
+    carregarLivro();
+  </script>
+</body>
+</html>

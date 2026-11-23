@@ -1,0 +1,192 @@
+
+-->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastrar livro — KonLivro</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/estilo.css">
+
+</head>
+<body>
+  <div class="jornal">
+    <header>
+      <div class="edicao">
+        <span>Livraria · Painel administrativo</span>
+        <span>Seção de cadastro</span>
+      </div>
+
+      <h1>KonLivro</h1>
+      <p class="subtitulo">Cada novo livro é uma história a mais para contar.</p>
+
+      <nav aria-label="Navegação principal">
+        <a href="index.html">Início</a>
+        <a href="index.html#acervo">Acervo</a>
+        <a href="cadastrar.html" aria-current="page">Cadastrar livro</a>
+        <a href="lista.html">Lista de livros</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="entrada">
+        <p class="rotulo">Acervo · Novo registro</p>
+        <h2>Cadastrar um livro</h2>
+        <p class="introducao">Preencha os dados abaixo para preparar um novo item do catálogo.</p>
+      </div>
+
+      <div class="conteudo entrada">
+        <form
+          id="formCadastro"
+          class="formulario"
+          action="php/cadastrar.php"
+          method="post"
+        >
+          <div class="campo completo">
+            <label for="titulo">Título do livro *</label>
+            <input
+              id="titulo"
+              name="titulo"
+              type="text"
+              maxlength="150"
+              placeholder="Ex.: Dom Casmurro"
+              required
+            >
+          </div>
+
+          <div class="campo completo">
+            <label for="autor">Autor *</label>
+            <input
+              id="autor"
+              name="autor"
+              type="text"
+              maxlength="120"
+              placeholder="Ex.: Machado de Assis"
+              required
+            >
+          </div>
+
+          <div class="campo completo">
+            <label for="categoria">Categoria *</label>
+            <select id="categoria" name="categoria" required>
+              <option value="">Selecione uma categoria</option>
+              <option value="literatura-brasileira">Literatura brasileira</option>
+              <option value="ficcao">Ficção</option>
+              <option value="fantasia">Fantasia</option>
+              <option value="educacao">Educação</option>
+              <option value="desenvolvimento-pessoal">Desenvolvimento pessoal</option>
+              <option value="outras">Outras</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="quantidade">Quantidade *</label>
+            <input
+              id="quantidade"
+              name="quantidade"
+              type="number"
+              min="0"
+              max="999999"
+              step="1"
+              value="1"
+              aria-describedby="ajudaQuantidade"
+              required
+            >
+            <p class="ajuda" id="ajudaQuantidade">Exemplares em estoque.</p>
+          </div>
+
+          <div class="campo">
+            <label for="preco">Preço unitário (R$) *</label>
+            <input
+              id="preco"
+              name="preco"
+              type="number"
+              min="0"
+              max="999999"
+              step="0.01"
+              placeholder="34,90"
+              aria-describedby="ajudaPreco"
+              required
+            >
+            <p class="ajuda" id="ajudaPreco">Valor de um exemplar.</p>
+          </div>
+
+          <p id="mensagem" class="completo" role="alert"></p>
+
+          <div class="acoes completo">
+            <button type="submit">Salvar livro →</button>
+            <a href="index.html">Cancelar</a>
+          </div>
+        </form>
+
+        <aside aria-labelledby="orientacoes">
+          <p class="rotulo">Nota ao administrador</p>
+          <h3 id="orientacoes">Antes de registrar</h3>
+          <p>Confira o título e o nome do autor, mantendo a mesma escrita usada na edição do livro.</p>
+          <p>Informe a quantidade disponível e o preço de venda de cada exemplar.</p>
+          <p class="nota">Todos os campos marcados com <strong>*</strong> são obrigatórios.</p>
+          <p class="nota">
+            <strong>Integração necessária:</strong> este formulário envia os dados
+            para <code>php/cadastrar.php</code>. O cadastro só será salvo quando
+            esse endpoint e o banco de dados estiverem implementados.
+          </p>
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      <span>KonLivro · Gestão da livraria</span>
+      <span>Organização em cada página.</span>
+    </footer>
+  </div>
+
+  <script>
+    const formulario = document.getElementById("formCadastro");
+    const mensagem = document.getElementById("mensagem");
+    const camposTexto = [
+      document.getElementById("titulo"),
+      document.getElementById("autor")
+    ];
+
+    camposTexto.forEach(campo => {
+      campo.addEventListener("input", () => {
+        campo.setCustomValidity("");
+        campo.removeAttribute("aria-invalid");
+        mensagem.textContent = "";
+      });
+    });
+
+    formulario.addEventListener("submit", evento => {
+      mensagem.textContent = "";
+
+      for (const campo of camposTexto) {
+        campo.value = campo.value.trim();
+
+        if (!campo.value) {
+          evento.preventDefault();
+          campo.setCustomValidity("Preencha este campo com um texto válido.");
+          campo.setAttribute("aria-invalid", "true");
+          campo.reportValidity();
+          return;
+        }
+      }
+
+      if (window.location.protocol === "file:") {
+        evento.preventDefault();
+        mensagem.textContent =
+          "Para enviar o cadastro, abra o projeto por um servidor PHP. " +
+          "O arquivo php/cadastrar.php também precisa estar implementado.";
+      }
+
+      // Em um servidor, o navegador envia o formulário ao PHP.
+      // O PHP deve validar todos os campos novamente e usar PDO
+      // com consultas preparadas para inserir os dados no banco.
+      // A confirmação de sucesso deve ocorrer somente após a gravação.
+    });
+  </script>
+</body>
+</html>

@@ -4,131 +4,101 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editar livro — KonLivro</title>
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../CSS/estilo.css">
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Serif+4:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="../CSS/estilo.css" rel="stylesheet">
 </head>
 <body>
-  <!--
-    Salve como editar.html.
-
-    Abra com o ID do livro:
-    editar.html?id=1
-
-    Endpoints necessários:
-    GET php/obter.php?id=1
-    Retorno JSON esperado:
-    {"id":1,"titulo":"Dom Casmurro","autor":"Machado de Assis",
-     "categoria":"literatura-brasileira","quantidade":10,"preco":"34.90"}
-
-    POST php/editar.php
-    Recebe: id, titulo, autor, categoria, quantidade e preco.
-    Retorno JSON esperado após salvar: {"sucesso":true}
-
-    Em caso de erro, use status HTTP apropriado e:
-    {"mensagem":"Descrição do erro"}
-
-    O PHP deve validar os dados, verificar autorização e usar PDO.
-    Este HTML não grava dados sozinho.
-  -->
-
   <div class="jornal">
     <header>
       <div class="edicao">
         <span>Livraria · Painel administrativo</span>
-        <span>Seção de atualização</span>
+        <span>Seção de edição</span>
       </div>
-
-      <h1>Gazeta do Acervo</h1>
-      <p class="subtitulo">O cuidado com as histórias está nos detalhes.</p>
-
+      <h1>KonLivro</h1>
+      <p class="subtitulo">Cada novo livro é uma história a mais para contar.</p>
       <nav aria-label="Navegação principal">
         <a href="index.html">Início</a>
         <a href="index.html#acervo">Acervo</a>
         <a href="cadastrar.html">Cadastrar livro</a>
         <a href="lista.html">Lista de livros</a>
+        <a href="editar.html" aria-current="page">Editar livro</a>
       </nav>
     </header>
 
     <main>
+      <a class="voltar" href="lista.html">← Voltar à lista de livros</a>
       <div class="entrada">
-        <a class="voltar" href="index.html#acervo">← Voltar ao acervo</a>
-        <p class="rotulo">Acervo · Revisão de registro</p>
-        <h2>Editar livro</h2>
-        <p class="introducao">
-          Revise as informações do título e salve as alterações.
-        </p>
+        <p class="rotulo">Acervo · Atualização de registro</p>
+        <h2>Uma nova edição dos dados.</h2>
+        <p class="introducao">Revise as informações do livro e salve as alterações no catálogo.</p>
       </div>
 
-      <p id="mensagem" class="mensagem" role="status" aria-live="polite">
-        Preparando o formulário…
-      </p>
+      <div class="conteudo">
+        <section aria-label="Formulário de edição">
+          <div class="form-topo">
+            <span id="registro">Registro de demonstração</span>
+            <span class="indicador" id="estado">Sem alterações</span>
+          </div>
 
-      <div class="conteudo entrada">
-        <form id="formEdicao">
-          <input id="id" name="id" type="hidden">
+          <form id="formEdicao" action="php/atualizar.php" method="post">
+            <input type="hidden" id="livroId" name="id" value="">
+            <div class="campos">
+              <div class="completo">
+                <label for="titulo">Título do livro <span>*</span></label>
+                <input id="titulo" name="titulo" maxlength="150" value="Dom Casmurro" required>
+              </div>
+              <div class="completo">
+                <label for="autor">Autor <span>*</span></label>
+                <input id="autor" name="autor" maxlength="120" value="Machado de Assis" required>
+              </div>
+              <div class="completo">
+                <label for="categoria">Categoria <span>*</span></label>
+                <select id="categoria" name="categoria" required>
+                  <option value="">Selecione uma categoria</option>
+                  <option value="literatura-brasileira" selected>Literatura brasileira</option>
+                  <option value="ficcao">Ficção</option>
+                  <option value="fantasia">Fantasia</option>
+                  <option value="educacao">Educação</option>
+                  <option value="desenvolvimento-pessoal">Desenvolvimento pessoal</option>
+                  <option value="outras">Outras</option>
+                </select>
+              </div>
+              <div>
+                <label for="quantidade">Quantidade <span>*</span></label>
+                <input id="quantidade" name="quantidade" type="number" min="0" max="999999" step="1" value="12" aria-describedby="ajudaQuantidade" required>
+                <p class="ajuda" id="ajudaQuantidade">Exemplares disponíveis em estoque.</p>
+              </div>
 
-          <fieldset id="campos" disabled>
-            <legend class="ajuda completo">Todos os campos com * são obrigatórios.</legend>
-
-            <div class="campo completo">
-              <label for="titulo">Título do livro *</label>
-              <input id="titulo" name="titulo" type="text" maxlength="150" required>
             </div>
 
-            <div class="campo completo">
-              <label for="autor">Autor *</label>
-              <input id="autor" name="autor" type="text" maxlength="120" required>
-            </div>
+            <p id="mensagem" role="alert"></p>
 
-            <div class="campo completo">
-              <label for="categoria">Categoria *</label>
-              <select id="categoria" name="categoria" required>
-                <option value="">Selecione uma categoria</option>
-                <option value="literatura-brasileira">Literatura brasileira</option>
-                <option value="ficcao">Ficção</option>
-                <option value="fantasia">Fantasia</option>
-                <option value="educacao">Educação</option>
-                <option value="desenvolvimento-pessoal">Desenvolvimento pessoal</option>
-                <option value="outras">Outras</option>
-              </select>
+            <div class="acoes">
+              <button class="salvar" type="submit">Salvar alterações <span aria-hidden="true">→</span></button>
+              <a class="cancelar" href="lista.html">Cancelar</a>
             </div>
-
-            <div class="campo">
-              <label for="quantidade">Quantidade *</label>
-              <input id="quantidade" name="quantidade" type="number"
-                min="0" max="999999" step="1" required
-                aria-describedby="ajudaQuantidade">
-              <p class="ajuda" id="ajudaQuantidade">Exemplares em estoque.</p>
-            </div>
-
-            <div class="campo">
-              <label for="preco">Preço unitário (R$) *</label>
-              <input id="preco" name="preco" type="number"
-                min="0" max="999999" step="0.01" required
-                aria-describedby="ajudaPreco">
-              <p class="ajuda" id="ajudaPreco">Valor de um exemplar.</p>
-            </div>
-
-            <div class="acoes completo">
-              <button id="salvar" type="submit">Salvar alterações →</button>
-              <a href="index.html#acervo">Cancelar</a>
-            </div>
-          </fieldset>
-        </form>
+            <button class="restaurar" id="restaurar" type="button">Restaurar os dados iniciais</button>
+            <p class="aviso" id="aviso">
+              Modo de demonstração: os valores acima são exemplos.
+              Para editar um livro real, abra esta página com
+              <code>?id=123</code> e implemente os endpoints PHP.
+            </p>
+          </form>
+        </section>
 
         <aside aria-labelledby="orientacoes">
+          <div class="ilustracao" aria-hidden="true">
+            <div class="livro"><span>Uma boa<br>história.</span></div>
+          </div>
           <p class="rotulo">Nota ao administrador</p>
-          <h3 id="orientacoes">Uma revisão cuidadosa</h3>
-          <p>Confira a grafia do título e do autor antes de atualizar o registro.</p>
-          <p>A quantidade representa os exemplares disponíveis. O preço corresponde a uma unidade.</p>
-          <p class="nota">As alterações só são confirmadas depois que o servidor salva os dados.</p>
-          <p class="nota">
-            <strong>Livro selecionado</strong><br>
-            <span id="registro">Nenhum registro carregado.</span>
-          </p>
+          <h3 id="orientacoes">Revisar é cuidar<br>do acervo.</h3>
+          <p>Confira o título e o autor de acordo com a edição disponível na livraria.</p>
+          <p>Atualize a quantidade em estoque e o preço unitário antes de salvar.</p>
+          <p class="nota">Esta operação altera um registro existente. Não cria um novo livro.</p>
+          <p class="nota">Todos os campos marcados com <strong>*</strong> são obrigatórios.</p>
+          <p class="nota">As alterações só serão gravadas quando <code>php/atualizar.php</code> estiver implementado e conectado ao banco de dados.</p>
         </aside>
       </div>
     </main>
@@ -141,118 +111,123 @@
 
   <script>
     const formulario = document.getElementById("formEdicao");
-    const campos = document.getElementById("campos");
     const mensagem = document.getElementById("mensagem");
-    const salvar = document.getElementById("salvar");
+    const estado = document.getElementById("estado");
+    const campos = ["titulo", "autor", "categoria", "quantidade", "preco"];
     const id = new URLSearchParams(window.location.search).get("id");
-    let salvando = false;
+    let carregado = false;
+    let enviando = false;
+    let iniciais = valores();
 
-    function avisar(texto, erro = false) {
-      mensagem.textContent = texto;
-      mensagem.classList.toggle("erro", erro);
+    function valores() {
+      return Object.fromEntries(
+        campos.map(nome => [nome, document.getElementById(nome).value])
+      );
     }
 
-    async function lerResposta(resposta) {
-      let dados;
-
-      try {
-        dados = await resposta.json();
-      } catch {
-        throw new Error("O servidor não retornou um JSON válido. Verifique os arquivos PHP.");
-      }
-
-      if (!resposta.ok) {
-        throw new Error(dados.mensagem || "Não foi possível concluir a operação.");
-      }
-
-      return dados;
+    function alterado() {
+      return JSON.stringify(valores()) !== JSON.stringify(iniciais);
     }
+
+    function atualizarEstado() {
+      estado.textContent = alterado() ? "Alterações não salvas" : "Sem alterações";
+      estado.style.color = alterado() ? "var(--vermelho)" : "var(--verde)";
+    }
+
+    formulario.addEventListener("input", () => {
+      ["titulo", "autor"].forEach(nome =>
+        document.getElementById(nome).setCustomValidity("")
+      );
+      mensagem.textContent = "";
+      atualizarEstado();
+    });
+
+    document.getElementById("restaurar").addEventListener("click", () => {
+      campos.forEach(nome => {
+        const campo = document.getElementById(nome);
+        campo.value = iniciais[nome];
+        campo.setCustomValidity("");
+      });
+      mensagem.textContent = "";
+      atualizarEstado();
+    });
 
     async function carregarLivro() {
-      if (!id || !/^[1-9]\d*$/.test(id)) {
-        avisar("Selecione um livro no acervo. O endereço deve conter um ID válido, como editar.html?id=1.", true);
+      if (!id) return;
+
+      if (!/^[1-9]\d*$/.test(id)) {
+        mensagem.textContent = "O identificador do livro é inválido.";
         return;
       }
 
-      if (window.location.protocol === "file:") {
-        avisar("Abra esta página por um servidor PHP para consultar e editar o livro.", true);
-        return;
-      }
-
-      avisar("Carregando os dados do livro…");
+      estado.textContent = "Carregando registro…";
+      document.getElementById("aviso").textContent =
+        "Buscando os dados do livro no servidor.";
+      const controles = [...formulario.querySelectorAll("input, select, button")];
+      controles.forEach(controle => controle.disabled = true);
 
       try {
         const resposta = await fetch(
-          `php/obter.php?id=${encodeURIComponent(id)}`,
+          "php/buscar_livro.php?id=" + encodeURIComponent(id),
           { headers: { Accept: "application/json" }, cache: "no-store" }
         );
-        const livro = await lerResposta(resposta);
+        if (!resposta.ok) throw new Error("Falha ao carregar");
+        const livro = await resposta.json();
 
-        if (!livro || String(livro.id) !== id ||
-            typeof livro.titulo !== "string" || typeof livro.autor !== "string" ||
-            livro.quantidade == null || livro.preco == null) {
-          throw new Error("Os dados recebidos não correspondem ao registro solicitado.");
+        if (String(livro.id) !== id ||
+            campos.some(nome => livro[nome] === undefined || livro[nome] === null)) {
+          throw new Error("Resposta inválida");
         }
 
-        ["titulo", "autor", "categoria", "quantidade", "preco"].forEach(nome => {
-          document.getElementById(nome).value = livro[nome] ?? "";
+        campos.forEach(nome => {
+          document.getElementById(nome).value = String(livro[nome]);
         });
-
-        document.getElementById("id").value = id;
-        document.getElementById("registro").textContent = `Nº ${id} — ${livro.titulo}`;
-        campos.disabled = false;
-        avisar("Registro carregado. Você pode atualizar as informações.");
+        document.getElementById("livroId").value = id;
+        iniciais = valores();
+        carregado = true;
+        document.getElementById("registro").textContent = "Livro · Registro #" + id;
+        document.getElementById("aviso").textContent =
+          "Dados carregados. Ao salvar, o formulário enviará as alterações para php/atualizar.php.";
+        atualizarEstado();
       } catch (erro) {
-        avisar(erro.message || "Não foi possível conectar ao servidor.", true);
+        mensagem.textContent =
+          "Não foi possível carregar o livro. Verifique se php/buscar_livro.php existe e retorna os dados em JSON.";
+        estado.textContent = "Registro indisponível";
+        document.getElementById("aviso").textContent =
+          "Os valores exibidos são exemplos. O salvamento está bloqueado até carregar um registro real.";
+      } finally {
+        controles.forEach(controle => controle.disabled = false);
       }
     }
 
-    ["titulo", "autor"].forEach(nome => {
-      document.getElementById(nome).addEventListener("input", evento => {
-        evento.target.setCustomValidity("");
-      });
-    });
-
-    formulario.addEventListener("submit", async evento => {
-      evento.preventDefault();
-      if (salvando || campos.disabled) return;
+    formulario.addEventListener("submit", evento => {
+      mensagem.textContent = "";
 
       for (const nome of ["titulo", "autor"]) {
         const campo = document.getElementById(nome);
         campo.value = campo.value.trim();
-        campo.setCustomValidity(campo.value ? "" : "Preencha este campo com um texto válido.");
+        if (!campo.value) {
+          evento.preventDefault();
+          campo.setCustomValidity("Preencha este campo com um texto válido.");
+          campo.reportValidity();
+          return;
+        }
       }
 
-      if (!formulario.reportValidity()) return;
+      if (window.location.protocol === "file:" || !carregado) {
+        evento.preventDefault();
+        mensagem.textContent =
+          "Nenhuma alteração foi salva. Abra a página em um servidor PHP com o ID de um livro e configure os endpoints de busca e atualização.";
+        return;
+      }
 
-      // Capture os dados antes de desabilitar os campos.
-      const dados = new FormData(formulario);
-      salvando = true;
-      campos.disabled = true;
-      salvar.textContent = "Salvando…";
-      avisar("Enviando as alterações ao servidor…");
+      enviando = true;
+    });
 
-      try {
-        const resposta = await fetch("php/editar.php", {
-          method: "POST",
-          headers: { Accept: "application/json" },
-          body: dados
-        });
-        const retorno = await lerResposta(resposta);
-
-        if (retorno.sucesso !== true) {
-          throw new Error(retorno.mensagem || "O servidor não confirmou a atualização.");
-        }
-
-        document.getElementById("registro").textContent =
-          `Nº ${id} — ${document.getElementById("titulo").value}`;
-        avisar("Alterações salvas com sucesso.");
-      } catch (erro) {
-        avisar(erro.message || "Falha na conexão. Verifique o acervo antes de tentar novamente.", true);
-      } finally {
-        salvando = false;
-        campos.disabled = false;
-        salvar.textContent = "Salvar alterações →";
+    window.addEventListener("beforeunload", evento => {
+      if (alterado() && !enviando) {
+        evento.preventDefault();
+        evento.returnValue = "";
       }
     });
 

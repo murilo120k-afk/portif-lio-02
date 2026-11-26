@@ -1,28 +1,7 @@
-/*
-// Código para editar livros
-$id = $_POST["id"];
-$autor = $_POST["autor"];
-$titulo = $_POST["titulo"];
-$ano_publicacao = $_POST["ano_publicacao"];
-$adiçao = $_POST["adiçao"];
-$quantidade = $_POST["quantidade"];
-
-mysqli_connect("localhost", "root", "root", "KonLivro") or die("Erro ao conectar ao banco de dados: " . mysqli_connect_error());
-$sql = "INSERT INTO livros (autor, titulo, categoria, ano_publicacao, adiçao, quantidade) VALUES ('$autor', '$titulo', '$categoria', $ano_publicacao, '$adiçao', $quantidade)";
-$result = mysqli_query($con,$sql);
-*/
 <?php
 
-$conexao = new mysqli(
-    'localhost',
-    'root',
-    'root',
-    'KonLivro'
-);
-
-if ($conexao->connect_error) {
-    die('Erro na conexão com o banco de dados.');
-}
+require_once "conexao.php"; 
+$conexao = mysqli_connect($servidor, $usuario, $senha, $banco);
 
 $conexao->set_charset('utf8mb4');
 
@@ -35,7 +14,10 @@ $titulo = trim($_POST['titulo'] ?? '');
 $autor = trim($_POST['autor'] ?? '');
 $categoria = trim($_POST['categoria'] ?? '');
 $quantidade = (int) ($_POST['quantidade'] ?? 0);
-$preco = (float) ($_POST['preco'] ?? 0);
+
+if (empty($autor) || empty($titulo) || empty($categoria) || empty($ano_publicacao) || empty($adiçao) || empty($quantidade)) {
+    echo "Preencha todos os campos obrigatórios.";
+    exit;
 
 if ($id <= 0 || $titulo === '' || $autor === '') {
     die('Dados inválidos.');
@@ -48,7 +30,6 @@ $sql = "
         autor = ?,
         categoria = ?,
         quantidade = ?,
-        preco = ?
     WHERE id = ?
 ";
 
@@ -60,7 +41,6 @@ $stmt->bind_param(
     $autor,
     $categoria,
     $quantidade,
-    $preco,
     $id
 );
 

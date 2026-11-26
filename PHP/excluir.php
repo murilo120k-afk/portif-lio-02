@@ -1,53 +1,48 @@
 <?php
 
-$conexao = new mysqli(
-    'localhost',
-    'root',
-    'root',
-    'KonLivro'
-);
+require_once "conexao.php";
 
-if ($conexao->connect_error) {
-    die('Erro ao conectar ao banco de dados.');
+header('Content-Type: application/json; charset=utf-8');
+
+function responder($dados, $status = 200)
+{
+    http_response_code($status);
+    echo json_encode($dados, JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
-$conexao->set_charset('utf8mb4');
-
-// Recebe o ID enviado por POST
-$id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-
-if (!$id || $id <= 0) {
-    die('ID do livro inválido.');
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    responder(
+        ['mensagem' => 'Método não permitido.'],
+        405
+    );
 }
 
-// Consulta preparada para evitar SQL Injection
-$sql = 'DELETE FROM livros WHERE id = ?';
+$sql = "
+    SELECT 
+        id,
+        titulo,
+        autor,
+        categoria,
+        quantidade,
+        adicao,
+        ano_publicacao
+    FROM livros
+    ORDER BY id DESC
+";
 
-$stmt = $conexao->prepare($sql);
+$consulta = mysqli_query($conexao, $sql);
 
-if (!$stmt) {
-    die('Erro ao preparar a exclusão.');
+if (!$consulta) {
+    responder(
+        [
+            'mensagem' => 'Erro ao consultar os livros.',
+            'erro' => mysqli_error($conexao)
+        ],
+        500
+    );
 }
 
-$stmt->bind_param('i', $id);
+$livros = mysqli_fetch_all($consulta, MYSQLI_ASSOC);
 
-if ($stmt->execute()) {
-    if ($stmt->affected_rows > 0) {
-        echo '
-            <h1>Livro excluído com sucesso!</h1>
-            <p>O registro foi removido do banco de dados.</p>
-            <a href="../lista.html">Voltar para a lista</a>
-        ';
-    } else {
-        echo '
-            <h1>Livro não encontrado</h1>
-            <p>Nenhum livro possui esse ID.</p>
-            <a href="../lista.html">Voltar para a lista</a>
-        ';
-    }
-} else {
-    echo 'Erro ao excluir o livro.';
-}
-
-$stmt->close();
-$conexao->close();
+responder($livros);

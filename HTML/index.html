@@ -10,7 +10,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../CSS/estilo.css">
 </head>
+
 <body>
+
+  <p id="mensagem" class="mensagem" role="status" aria-live="polite"></p>
+
   <div class="jornal">
     <header>
       <div class="edicao">
@@ -89,6 +93,37 @@
     </footer>
   </div>
 
+  <script src="../JavaScript/index.js"></script>
+
+
+  <p id="mensagem" class="mensagem" role="status" aria-live="polite"></p>
+
+  <div class="jornal">
+    <!-- restante do conteúdo -->
+  </div>
+
+  <script>
+    const parametros = new URLSearchParams(window.location.search);
+    const textoMensagem = parametros.get("mensagem");
+    const mensagem = document.getElementById("mensagem");
+
+    if (textoMensagem && mensagem) {
+      mensagem.textContent = textoMensagem;
+      mensagem.classList.add("visivel");
+
+      setTimeout(() => {
+        mensagem.classList.remove("visivel");
+      }, 5000);
+
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname
+      );
+    }
+  </script>
+
   <script src="../JS/script.js"></script>
+
 </body>
 </html>

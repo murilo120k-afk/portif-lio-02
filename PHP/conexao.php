@@ -2,16 +2,24 @@
 
 $servidor = "localhost";
 $usuario  = "root";
-$senha    = "root";
+$senha    = "";
 $banco    = "Konlivro";
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
-$conexao = mysqli_connect($servidor, $usuario, $senha, $banco);
+$conexao = mysqli_connect(
+    $servidor,
+    $usuario,
+    $senha,
+    $banco
+);
 
 if (!$conexao) {
-    die("Falha na conexão com o banco de dados: " . mysqli_connect_error());
+    die(
+        "Falha na conexão com o banco de dados: " .
+        mysqli_connect_error()
+    );
 }
 
-mysqli_set_charset($conexao, "utf8");
+mysqli_set_charset($conexao, "utf8mb4");
 ?>

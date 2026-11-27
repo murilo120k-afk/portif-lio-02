@@ -1,26 +1,33 @@
 <?php
 
-require_once "conexao.php"; 
+require_once "conexao.php";
+
 $conexao = mysqli_connect($servidor, $usuario, $senha, $banco);
 
-$conexao->set_charset('utf8mb4');
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    die('Método inválido.');
+if (!$conexao) {
+    die("Erro ao conectar ao banco de dados: " . mysqli_connect_error());
 }
 
-$id = (int) ($_POST['id'] ?? 0);
-$titulo = trim($_POST['titulo'] ?? '');
-$autor = trim($_POST['autor'] ?? '');
-$categoria = trim($_POST['categoria'] ?? '');
-$quantidade = (int) ($_POST['quantidade'] ?? 0);
+$conexao->set_charset("utf8mb4");
 
-if (empty($autor) || empty($titulo) || empty($categoria) || empty($ano_publicacao) || empty($adiçao) || empty($quantidade)) {
-    echo "Preencha todos os campos obrigatórios.";
-    exit;
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    die("Método inválido.");
+}
 
-if ($id <= 0 || $titulo === '' || $autor === '') {
-    die('Dados inválidos.');
+$id = (int) ($_POST["id"] ?? 0);
+$titulo = trim($_POST["titulo"] ?? "");
+$autor = trim($_POST["autor"] ?? "");
+$categoria = trim($_POST["categoria"] ?? "");
+$quantidade = (int) ($_POST["quantidade"] ?? 0);
+
+if (
+    $id <= 0 ||
+    $titulo === "" ||
+    $autor === "" ||
+    $categoria === "" ||
+    $quantidade <= 0
+) {
+    die("Preencha todos os campos obrigatórios com valores válidos.");
 }
 
 $sql = "
@@ -29,14 +36,18 @@ $sql = "
         titulo = ?,
         autor = ?,
         categoria = ?,
-        quantidade = ?,
+        quantidade = ?
     WHERE id = ?
 ";
 
 $stmt = $conexao->prepare($sql);
 
+if (!$stmt) {
+    die("Erro ao preparar a consulta: " . $conexao->error);
+}
+
 $stmt->bind_param(
-    'sssidi',
+    "sssii",
     $titulo,
     $autor,
     $categoria,
@@ -45,14 +56,15 @@ $stmt->bind_param(
 );
 
 if ($stmt->execute()) {
-    echo '
+    echo "
         <h1>Livro atualizado com sucesso!</h1>
-        <a href="../lista.html">Voltar para a lista</a>
-    ';
+        <a href=\"../lista.html\">Voltar para a lista</a>
+    ";
 } else {
-    echo 'Erro ao atualizar o livro.';
+    echo "Erro ao atualizar o livro: " . $stmt->error;
 }
 
 $stmt->close();
 $conexao->close();
+
 ?>

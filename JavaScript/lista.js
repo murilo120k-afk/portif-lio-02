@@ -1,0 +1,176 @@
+
+    const pesquisa = document.getElementById("pesquisa");
+    const lista = document.getElementById("listaLivros");
+    const mensagem = document.getElementById("mensagem");
+    const atualizar = document.getElementById("atualizar");
+    const anterior = document.getElementById("anterior");
+    const proxima = document.getElementById("proxima");
+    const moeda = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+
+    let livros = [];
+    let paginaAtual = 1;
+    const porPagina = 10;
+
+    function normalizar(texto) {
+      return texto.normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    }
+
+    function avisar(texto, erro = false) {
+      mensagem.textContent = texto;
+      mensagem.classList.toggle("erro", erro);
+    }
+
+    function linhaInformativa(texto) {
+      lista.replaceChildren();
+      const linha = document.createElement("tr");
+      const coluna = document.createElement("td");
+      coluna.colSpan = 5;
+      coluna.textContent = texto;
+      linha.append(coluna);
+      lista.append(linha);
+    }
+
+    function renderizar() {
+      const termo = normalizar(pesquisa.value.trim());
+      const encontrados = livros.filter(livro =>
+        normalizar(livro.titulo).includes(termo)
+      );
+
+      const totalPaginas = Math.max(1, Math.ceil(encontrados.length / porPagina));
+      paginaAtual = Math.min(paginaAtual, totalPaginas);
+      const inicio = (paginaAtual - 1) * porPagina;
+      const visiveis = encontrados.slice(inicio, inicio + porPagina);
+
+      lista.replaceChildren();
+
+      visiveis.forEach(livro => {
+        const linha = document.createElement("tr");
+
+        [
+          livro.titulo,
+          livro.autor,
+          `${livro.quantidade} un.`,
+          moeda.format(livro.preco)
+        ].forEach(valor => {
+          const coluna = document.createElement("td");
+          coluna.textContent = valor;
+          linha.append(coluna);
+        });
+
+        const acao = document.createElement("td");
+        const editar = document.createElement("a");
+        editar.href = `editar.html?id=${encodeURIComponent(livro.id)}`;
+        editar.textContent = "Editar →";
+        editar.setAttribute("aria-label", `Editar ${livro.titulo}`);
+        acao.append(editar);
+        linha.append(acao);
+        lista.append(linha);
+      });
+
+      if (!encontrados.length) {
+        linhaInformativa(livros.length
+          ? "Nenhum livro corresponde à pesquisa."
+          : "O acervo está vazio. Cadastre o primeiro livro.");
+      }
+
+      document.getElementById("resumo").textContent = encontrados.length
+        ? `Mostrando ${inicio + 1}–${Math.min(inicio + porPagina, encontrados.length)} de ${encontrados.length} títulos.`
+        : "Nenhum título para exibir.";
+
+      document.getElementById("pagina").textContent =
+        `${paginaAtual} / ${totalPaginas}`;
+
+      anterior.disabled = paginaAtual === 1;
+      proxima.disabled = paginaAtual === totalPaginas;
+
+      avisar(encontrados.length === 1
+        ? "1 título encontrado."
+        : `${encontrados.length} títulos encontrados.`);
+    }
+
+    async function carregarLivros() {
+      atualizar.disabled = true;
+      pesquisa.disabled = true;
+      anterior.disabled = true;
+      proxima.disabled = true;
+      document.getElementById("catalogo").setAttribute("aria-busy", "true");
+      avisar("Carregando o acervo…");
+
+      try {
+        if (window.location.protocol === "file:") {
+          throw new Error("Abra o projeto por um servidor PHP, não por um duplo clique no arquivo.");
+        }
+
+        const resposta = await fetch("php/listar.php", {
+          headers: { Accept: "application/json" },
+          cache: "no-store"
+        });
+
+        let dados;
+        try {
+          dados = await resposta.json();
+        } catch {
+          throw new Error("O servidor não retornou JSON válido. Verifique php/listar.php.");
+        }
+
+        if (!resposta.ok) {
+          throw new Error(dados?.mensagem || "Não foi possível consultar o acervo.");
+        }
+
+        if (!Array.isArray(dados)) {
+          throw new Error("O PHP deve retornar um array JSON com os livros.");
+        }
+
+        livros = dados.map(livro => {
+          const id = String(livro.id);
+          const quantidade = Number(livro.quantidade);
+          const preco = Number(livro.preco);
+
+          if (!/^[1-9]\d*$/.test(id) ||
+              typeof livro.titulo !== "string" ||
+              typeof livro.autor !== "string" ||
+              livro.quantidade == null || livro.preco == null ||
+              !Number.isInteger(quantidade) || quantidade < 0 ||
+              !Number.isFinite(preco) || preco < 0) {
+            throw new Error("Um registro retornado pelo servidor contém dados inválidos.");
+          }
+
+          return { ...livro, id, quantidade, preco };
+        });
+
+        paginaAtual = 1;
+        pesquisa.disabled = false;
+        renderizar();
+      } catch (erro) {
+        livros = [];
+        linhaInformativa("Não foi possível carregar os registros.");
+        document.getElementById("resumo").textContent = "Consulta indisponível.";
+        document.getElementById("pagina").textContent = "1 / 1";
+        avisar(erro.message || "Falha na conexão com o servidor.", true);
+      } finally {
+        atualizar.disabled = false;
+        document.getElementById("catalogo").setAttribute("aria-busy", "false");
+      }
+    }
+
+    pesquisa.addEventListener("input", () => {
+      paginaAtual = 1;
+      renderizar();
+    });
+
+    atualizar.addEventListener("click", carregarLivros);
+    anterior.addEventListener("click", () => {
+      paginaAtual--;
+      renderizar();
+    });
+    proxima.addEventListener("click", () => {
+      paginaAtual++;
+      renderizar();
+    });
+
+    carregarLivros();

@@ -8,7 +8,5 @@ id int primary key auto_increment,
 autor varchar(100) not null,
 titulo varchar(100) not null,
 categoria varchar(100) not null,
-ano_publicacao int ,
-adiçao date default current_date,
 quantidade int default 1
 );  

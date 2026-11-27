@@ -346,3 +346,16 @@
       }
     }
  
+  .mensagem {
+    display: none;
+    margin: 20px 0;
+    padding: 14px 18px;
+    border: 1px solid #4f7658;
+    background: #e4f0e3;
+    color: #285333;
+  }
+
+  .mensagem.visivel {
+    display: block;
+  }
+

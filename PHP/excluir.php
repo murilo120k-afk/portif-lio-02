@@ -1,6 +1,7 @@
 <?php
 
 require_once "conexao.php";
+$conexao = mysqli_connect($servidor, $usuario, $senha, $banco);
 
 header('Content-Type: application/json; charset=utf-8');
 
